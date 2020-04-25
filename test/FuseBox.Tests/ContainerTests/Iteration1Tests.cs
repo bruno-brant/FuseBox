@@ -1,9 +1,12 @@
+// Copyright (c) Bruno Brant. All rights reserved.
+// Licensed under the MIT License. See LICENSE in the project root for license information.
+
 using System;
 using Xunit;
 
 namespace FuseBox.Tests
 {
-    public class ContainerTests
+    public class Iteration1Tests
     {
         private readonly Container _sut = new Container();
 
@@ -67,6 +70,8 @@ namespace FuseBox.Tests
 
             Assert.IsType<D>(instance);
         }
+
+#pragma warning disable IDE0060 // Remove unused parameter
         private class A
         {
         }

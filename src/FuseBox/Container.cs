@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -14,6 +15,16 @@ namespace FuseBox
     public class Container // TODO: Rename it FuseBox once I settle on a package name. :)
     {
         /// <summary>
+        /// Message when there isn't a suitable constructor.
+        /// </summary>
+        private const string NoSuitableConstructor = "No suitable constructor found. Inspect inner exception for details.";
+
+        /// <summary>
+        /// Tells if a certain type is currently being resolved.
+        /// </summary>
+        private readonly Dictionary<Type, bool> _isResolving = new Dictionary<Type, bool>(); // TODO: This isn't thread-safe
+
+        /// <summary>
         /// Resolves an instance for the given type.
         /// </summary>
         /// <param name="type">The type to be resolved.</param>
@@ -25,28 +36,56 @@ namespace FuseBox
                 throw new ArgumentNullException(nameof(type));
             }
 
+            if (_isResolving.ContainsKey(type) && _isResolving[type] == true)
+            {
+                throw new CyclicDependencyException(type);
+            }
+
+            _isResolving[type] = true;
+
             var constructors = type.GetConstructors();
+
+            Exception lastException = null;
 
             foreach (var constructor in constructors.OrderByDescending(_ => _.GetParameters().Length))
             {
                 try
                 {
-                    return Resolve(constructor);
+                    var instance = Resolve(constructor);
+
+                    _isResolving[type] = false;
+
+                    return instance;
                 }
-                catch (UnresolvableTypeException)
+                catch (UnresolvableTypeException e)
                 {
-                    // TODO: Ignoring this exception works, but also multiple stackunwinds to get the correct ctor.
+                    // TODO: Ignoring this exception works, has poor performance
+                    lastException = e;
+                }
+                catch (CyclicDependencyException e)
+                {
+                    // TODO: Ignoring this exception works, has poor performance
+                    lastException = e;
                 }
             }
 
-            throw new UnresolvableTypeException(type, "No suitable constructor found. Inspect inner exception for details.");
+            _isResolving[type] = false;
+
+            // specific cause, why that constructor isn't suitable
+            if (constructors.Length == 1)
+            {
+                throw lastException;
+            }
+
+            // Generic - there are multiple constructors, and none of them are suitable
+            throw new UnresolvableTypeException(type, NoSuitableConstructor, lastException);
         }
 
         private object Resolve(ConstructorInfo constructor)
         {
             var parameters = constructor.GetParameters();
 
-            if (parameters.Count() == 0)
+            if (parameters.Length == 0)
             {
                 return constructor.Invoke(null);
             }

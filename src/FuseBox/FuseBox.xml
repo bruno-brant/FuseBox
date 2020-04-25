@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FuseBox</name>
+    </assembly>
+    <members>
+        <member name="T:FuseBox.Container">
+            <summary>
+            Fuse is a very simple IoC container that should be used to wire-up applications
+            in a loosely coupled way.
+            </summary>
+        </member>
+        <member name="F:FuseBox.Container.NoSuitableConstructor">
+            <summary>
+            Message when there isn't a suitable constructor.
+            </summary>
+        </member>
+        <member name="F:FuseBox.Container._isResolving">
+            <summary>
+            Tells if a certain type is currently being resolved.
+            </summary>
+        </member>
+        <member name="M:FuseBox.Container.Resolve(System.Type)">
+            <summary>
+            Resolves an instance for the given type.
+            </summary>
+            <param name="type">The type to be resolved.</param>
+            <returns>A instance that is assignable to <paramref name="type"/>.</returns>
+        </member>
+        <member name="T:FuseBox.CyclicDependencyException">
+            <summary>
+            Exception thrown when <see cref="M:FuseBox.Container.Resolve(System.Type)"/> can't resolve
+            a type because it's dependency graph contains a cycle.
+            </summary>
+        </member>
+        <member name="M:FuseBox.CyclicDependencyException.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.CyclicDependencyException"/> class.
+            </summary>
+            <param name="type">The type where the cycle was identified.</param>
+        </member>
+        <member name="P:FuseBox.CyclicDependencyException.Type">
+            <summary>
+            Gets the type where the cycle was identified.
+            </summary>
+        </member>
+        <member name="T:FuseBox.UnresolvableTypeException">
+            <summary>
+            Exception throw when a certain type couldn't be resolved by <see cref="T:FuseBox.Container"/>.
+            </summary>
+        </member>
+        <member name="M:FuseBox.UnresolvableTypeException.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.UnresolvableTypeException"/> class.
+            </summary>
+            <param name="type">The type that couldn't be resolved.</param>
+        </member>
+        <member name="M:FuseBox.UnresolvableTypeException.#ctor(System.Type,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.UnresolvableTypeException"/> class.
+            </summary>
+            <param name="type">The type that couldn't be resolved.</param>
+            <param name="reason">The reason why the type couldn't be resolved.</param>
+        </member>
+        <member name="M:FuseBox.UnresolvableTypeException.#ctor(System.Type,System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.UnresolvableTypeException"/> class.
+            </summary>
+            <param name="type">The type that couldn't be resolved.</param>
+            <param name="reason">The reason why the type couldn't be resolved.</param>
+            <param name="innerException">The exception that caused this exception.</param>
+        </member>
+        <member name="M:FuseBox.UnresolvableTypeException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.UnresolvableTypeException"/> class with serialized data.
+            </summary>
+            <param name="info">
+                The System.Runtime.Serialization.SerializationInfo that holds the serialized
+                object data about the exception being thrown.
+            </param>
+            <param name="context">
+                The System.Runtime.Serialization.StreamingContext that contains contextual information
+                about the source or destination.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+                The info parameter is null.
+            </exception>
+            <exception cref="T:System.Runtime.Serialization.SerializationException">
+                The class name is null or System.Exception.HResult is zero (0).
+            </exception>
+        </member>
+        <member name="P:FuseBox.UnresolvableTypeException.Type">
+            <summary>
+            Gets the type that couldn't be resolved.
+            </summary>
+        </member>
+    </members>
+</doc>

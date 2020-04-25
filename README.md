@@ -3,8 +3,8 @@
 
 FuseBox is just a exercise in coding that I'm doing - writing a simple injection library for .NET Core. So, before you ask, nope: .NET Core doesn't need yet another injection framework. In fact, ASP.NET's embedded one is good enough for 99.9% of projects out there. I'm doing this for fun and experimenting (or maybe I'm just bored).
 
-The name...
------------
+### The name...
+
 
 One of my university teachers used to say that a great project starts with a good name. FuseBox is were we wire up buildings, and the IoC Container is where we wire up applications.
 
@@ -27,3 +27,22 @@ For now, we will require that types be registered within the container. In sum:
 
 This are very basic rules but gives the very basic notion of how the container should behave.
 
+Iteration 2 - Cyclic dependencies
+=================================
+
+Right now, we don't deal with a very basic problem when resolving the objects. If a certain object A depends on B, and B depends on A, we would end up with a cyclid dependency, which is unsolvable - you can't create an instace of A because to do so, you need to create B, and to create B, you need to create A... 
+
+This can happen in different levels of indirection, so it's also cyclic if A → B → C → A:
+
+```mermaid
+graph LR;
+    A-->B;
+    B-->C;
+	C-->A;
+```
+
+Which means that A, B and C are unsolvable.
+
+The goal of this iteration is simple: we must detect cyclid dependencies and fail with a proper exception, `CyclidDependencyException`. For now, that's all that is required, but informing the cycle would be very important.
+
+One caveat that we must also consider when implementing is that types may have more than one constructor, and while one may represent a cycle, the other may not - in this case, FuseBox should resolve using the non-cyclic constructor.
