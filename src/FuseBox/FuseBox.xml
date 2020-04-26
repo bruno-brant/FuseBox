@@ -6,13 +6,8 @@
     <members>
         <member name="T:FuseBox.Container">
             <summary>
-            Fuse is a very simple IoC container that should be used to wire-up applications
-            in a loosely coupled way.
-            </summary>
-        </member>
-        <member name="F:FuseBox.Container.NoSuitableConstructor">
-            <summary>
-            Message when there isn't a suitable constructor.
+            Fuse is a very simple IoC container that should be used to wire-up
+            applicationsin a loosely coupled way.
             </summary>
         </member>
         <member name="F:FuseBox.Container._isResolving">
@@ -20,12 +15,72 @@
             Tells if a certain type is currently being resolved.
             </summary>
         </member>
+        <member name="F:FuseBox.Container._mappings">
+            <summary>
+            Maps abstract types to concrete implementations.
+            </summary>
+        </member>
+        <member name="M:FuseBox.Container.Register(System.Type,System.Type)">
+            <summary>
+            Registers a mapping between two types.
+            </summary>
+            <param name="requested">The type that is requested of the container.</param>
+            <param name="resolves">The type that the container should resolve.</param>
+        </member>
+        <member name="M:FuseBox.Container.TryRegister(System.Type,System.Type)">
+            <summary>
+            Tries to registers a mapping between two types.
+            </summary>
+            <param name="requested">The type that is requested of the container.</param>
+            <param name="resolves">The type that the container should resolve.</param>
+            <returns>
+            True if there were no previous mappings registered and therefore this 
+            registration succeeded. False otherwise.
+            </returns>
+        </member>
         <member name="M:FuseBox.Container.Resolve(System.Type)">
             <summary>
             Resolves an instance for the given type.
             </summary>
-            <param name="type">The type to be resolved.</param>
-            <returns>A instance that is assignable to <paramref name="type"/>.</returns>
+            <param name="request">The type to be resolved.</param>
+            <returns>
+                A instance that is assignable to <paramref name="request"/>.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+                When <paramref name="request"/> is null.
+            </exception>
+            <exception cref="T:FuseBox.CyclicDependencyException">
+                When <paramref name="request"/> constructors have cyclic dependencies,
+                that is, the object graph they form has at least on cycle.
+            </exception>
+            <exception cref="T:FuseBox.UnresolvableTypeException">
+                When <paramref name="request"/> can't be resolved to a instatiable
+                constructor.
+            </exception>
+            <exception cref="T:FuseBox.UnmappedTypeException">
+                When <paramref name="request"/> isn't instantiable and there are
+                no mappings available.
+            </exception>
+        </member>
+        <member name="M:FuseBox.Container.Unregister(System.Type)">
+            <summary>
+            Removes mappings.
+            </summary>
+            <param name="requested">The type for which all mappings will be removed.</param>
+            <exception cref="T:FuseBox.TypeNotRegisteredException">
+            When the requested type has no mappings.
+            </exception>
+        </member>
+        <member name="M:FuseBox.Container.IsRegistered(System.Type)">
+            <summary>
+            Informs whether a given type has mappings registered within the container.
+            </summary>
+            <param name="type">
+                The type to check for mappings.
+            </param>
+            <returns>
+                True if the type has mappings, false otherwise.
+            </returns>
         </member>
         <member name="T:FuseBox.CyclicDependencyException">
             <summary>
@@ -44,6 +99,261 @@
             Gets the type where the cycle was identified.
             </summary>
         </member>
+        <member name="T:FuseBox.DuplicatedMappingException">
+            <summary>
+            A type of <see cref="T:FuseBox.MappingException"/> thrown when the requested type.
+            already has a mapping.
+            </summary>
+        </member>
+        <member name="M:FuseBox.DuplicatedMappingException.#ctor(System.Type,System.Type,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.DuplicatedMappingException"/> class.
+            </summary>
+            <param name="requested">The mapping's requested param.</param>
+            <param name="newResolution">The mapping's resolves param.</param>
+            <param name="previousResolution">The already registered resolving type.</param>
+        </member>
+        <member name="M:FuseBox.DuplicatedMappingException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.DuplicatedMappingException"/> class with serialized data.
+            </summary>
+            <param name="info">
+                The System.Runtime.Serialization.SerializationInfo that holds the serialized
+                object data about the exception being thrown.
+            </param>
+            <param name="context">
+                The System.Runtime.Serialization.StreamingContext that contains contextual information
+                about the source or destination.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+                The info parameter is null.
+            </exception>
+            <exception cref="T:System.Runtime.Serialization.SerializationException">
+                The class name is null or System.Exception.HResult is zero (0).
+            </exception>
+        </member>
+        <member name="P:FuseBox.DuplicatedMappingException.PreviousResolution">
+            <summary>
+            Gets the previous resolving type registered for <see cref="P:FuseBox.MappingException.Requested"/>.
+            </summary>
+        </member>
+        <member name="T:FuseBox.ImproperMappingException">
+            <summary>
+            Exception thrown when the user tried to register a mapping between types
+            that can't be assigned to each other.
+            </summary>
+        </member>
+        <member name="M:FuseBox.ImproperMappingException.#ctor(System.Type,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.ImproperMappingException"/> class.
+            </summary>
+            <param name="requested">The mapping's requested param.</param>
+            <param name="resolves">The mapping's resolves param.</param>
+        </member>
+        <member name="T:FuseBox.MappingException">
+            <summary>
+            Exception thrown when the user tried to register a mapping between types
+            that violates resolution rules.
+            </summary>
+        </member>
+        <member name="M:FuseBox.MappingException.#ctor(System.Type,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.MappingException"/> class.
+            </summary>
+            <param name="requested">The mapping's requested param.</param>
+            <param name="resolves">The mapping's resolves param.</param>
+        </member>
+        <member name="M:FuseBox.MappingException.#ctor(System.Type,System.Type,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.MappingException"/> class.
+            </summary>
+            <param name="requested">The mapping's requested param.</param>
+            <param name="resolves">The mapping's resolves param.</param>
+            <param name="message">The message that describes the error.</param>
+        </member>
+        <member name="M:FuseBox.MappingException.#ctor(System.Type,System.Type,System.String,System.Exception)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.MappingException"/> class.
+            </summary>
+            <param name="requested">The mapping's requested param.</param>
+            <param name="resolves">The mapping's resolves param.</param>
+            <param name="message">The message that describes the error.</param>
+            <param name="inner">
+                The exception that is the cause of the current exception, or a null reference
+                (Nothing in Visual Basic) if no inner exception is specified.
+            </param>
+        </member>
+        <member name="M:FuseBox.MappingException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.MappingException"/> class with serialized data.
+            </summary>
+            <param name="info">
+                The System.Runtime.Serialization.SerializationInfo that holds the serialized
+                object data about the exception being thrown.
+            </param>
+            <param name="context">
+                The System.Runtime.Serialization.StreamingContext that contains contextual information
+                about the source or destination.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+                The info parameter is null.
+            </exception>
+            <exception cref="T:System.Runtime.Serialization.SerializationException">
+                The class name is null or System.Exception.HResult is zero (0).
+            </exception>
+        </member>
+        <member name="P:FuseBox.MappingException.Requested">
+            <summary>
+            Gets the mapping's requested param.
+            </summary>
+        </member>
+        <member name="P:FuseBox.MappingException.Resolves">
+            <summary>
+            Gets the mapping's resolved param.
+            </summary>
+        </member>
+        <member name="T:FuseBox.NoSuitableConstructorException">
+            <summary>
+            Thrown when no suitable constructor is found in the requested type.
+            </summary>
+        </member>
+        <member name="F:FuseBox.NoSuitableConstructorException.NoSuitableConstructor">
+            <summary>
+            Message when there isn't a suitable constructor.
+            </summary>
+        </member>
+        <member name="M:FuseBox.NoSuitableConstructorException.#ctor(System.Type,System.Collections.Generic.IDictionary{System.String,System.Exception})">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.NoSuitableConstructorException"/> class.
+            </summary>
+            <param name="requested">The type that was requested to the container.</param>
+            <param name="reasons">
+                Why each constructor of <paramref name="requested"/> was rejected.
+            </param>
+        </member>
+        <member name="M:FuseBox.NoSuitableConstructorException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.NoSuitableConstructorException"/> class with serialized data.
+            </summary>
+            <param name="info">
+                The System.Runtime.Serialization.SerializationInfo that holds the serialized
+                object data about the exception being thrown.
+            </param>
+            <param name="context">
+                The System.Runtime.Serialization.StreamingContext that contains contextual information
+                about the source or destination.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+                The info parameter is null.
+            </exception>
+            <exception cref="T:System.Runtime.Serialization.SerializationException">
+                The class name is null or System.Exception.HResult is zero (0).
+            </exception>
+        </member>
+        <member name="P:FuseBox.NoSuitableConstructorException.Reasons">
+            <summary>
+            Gets why each constructor of <see cref="P:FuseBox.UnresolvableTypeException.Requested"/>
+            was rejected.
+            </summary>
+            <remarks>
+            The key is a description of the constructor and the value is the
+            <see cref="T:System.Exception"/> that was thrown when trying to resolve it.
+            </remarks>
+        </member>
+        <member name="T:FuseBox.SerializationInfoExtensions">
+            <summary>
+            Extensions for <see cref="T:System.Runtime.Serialization.SerializationInfo"/>.
+            </summary>
+        </member>
+        <member name="M:FuseBox.SerializationInfoExtensions.GetValue``1(System.Runtime.Serialization.SerializationInfo,System.String)">
+            <summary>
+                Retrieves a value from the System.Runtime.Serialization.SerializationInfo store.
+            </summary>
+            <param name="info">
+            The <see cref="T:System.Runtime.Serialization.SerializationInfo"/> store where the object will be retrieved from.
+            </param>
+            <param name="name">
+                The name associated with the value to retrieve.
+            </param>
+            <typeparam name="T">
+                The System.Type of the value to retrieve. If the stored value cannot be converted
+                to this type, the system will throw a System.InvalidCastException.
+            </typeparam>
+            <returns>
+                The object of the specified System.Type associated with name.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+                name or type is null.
+            </exception>
+            <exception cref="T:System.InvalidCastException">
+                The value associated with name cannot be converted to type.
+            </exception>
+            <exception cref="T:System.Runtime.Serialization.SerializationException">
+                An element with the specified name is not found in the current instance.
+            </exception>
+        </member>
+        <member name="T:FuseBox.TypeNotRegisteredException">
+            <summary>
+            Thrown when the user tries to unregister mappings for a type that has no
+            mappings.
+            </summary>
+        </member>
+        <member name="M:FuseBox.TypeNotRegisteredException.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.TypeNotRegisteredException"/> class.
+            </summary>
+            <param name="requested">
+            The type being unregistered.
+            </param>
+        </member>
+        <member name="M:FuseBox.TypeNotRegisteredException.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.TypeNotRegisteredException"/> class with serialized data.
+            </summary>
+            <param name="info">
+                The System.Runtime.Serialization.SerializationInfo that holds the serialized
+                object data about the exception being thrown.
+            </param>
+            <param name="context">
+                The System.Runtime.Serialization.StreamingContext that contains contextual information
+                about the source or destination.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+                The info parameter is null.
+            </exception>
+            <exception cref="T:System.Runtime.Serialization.SerializationException">
+                The class name is null or System.Exception.HResult is zero (0).
+            </exception>
+        </member>
+        <member name="P:FuseBox.TypeNotRegisteredException.Requested">
+            <summary>
+            Gets the type being unregistered.
+            </summary>
+        </member>
+        <member name="T:FuseBox.UninstantiableTypeException">
+            <summary>
+            Thrown when the user tries to register a mapping where the resolving type
+            isn't instantiable (for instance, an interface or an abstract class).
+            </summary>
+        </member>
+        <member name="M:FuseBox.UninstantiableTypeException.#ctor(System.Type,System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.UninstantiableTypeException"/> class.
+            </summary>
+            <param name="requested">The mapping's requested param.</param>
+            <param name="resolves">The mapping's resolves param.</param>
+        </member>
+        <member name="T:FuseBox.UnmappedTypeException">
+            <summary>
+            Thrown when the type requested is abstract and has no mappings.
+            </summary>
+        </member>
+        <member name="M:FuseBox.UnmappedTypeException.#ctor(System.Type)">
+            <summary>
+            Initializes a new instance of the <see cref="T:FuseBox.UnmappedTypeException"/> class.
+            </summary>
+            <param name="requested">The type that couldn't be resolved.</param>
+        </member>
         <member name="T:FuseBox.UnresolvableTypeException">
             <summary>
             Exception throw when a certain type couldn't be resolved by <see cref="T:FuseBox.Container"/>.
@@ -53,20 +363,20 @@
             <summary>
             Initializes a new instance of the <see cref="T:FuseBox.UnresolvableTypeException"/> class.
             </summary>
-            <param name="type">The type that couldn't be resolved.</param>
+            <param name="requested">The type that couldn't be resolved.</param>
         </member>
         <member name="M:FuseBox.UnresolvableTypeException.#ctor(System.Type,System.String)">
             <summary>
             Initializes a new instance of the <see cref="T:FuseBox.UnresolvableTypeException"/> class.
             </summary>
-            <param name="type">The type that couldn't be resolved.</param>
+            <param name="requested">The type that couldn't be resolved.</param>
             <param name="reason">The reason why the type couldn't be resolved.</param>
         </member>
         <member name="M:FuseBox.UnresolvableTypeException.#ctor(System.Type,System.String,System.Exception)">
             <summary>
             Initializes a new instance of the <see cref="T:FuseBox.UnresolvableTypeException"/> class.
             </summary>
-            <param name="type">The type that couldn't be resolved.</param>
+            <param name="requested">The type that couldn't be resolved.</param>
             <param name="reason">The reason why the type couldn't be resolved.</param>
             <param name="innerException">The exception that caused this exception.</param>
         </member>
@@ -89,9 +399,9 @@
                 The class name is null or System.Exception.HResult is zero (0).
             </exception>
         </member>
-        <member name="P:FuseBox.UnresolvableTypeException.Type">
+        <member name="P:FuseBox.UnresolvableTypeException.Requested">
             <summary>
-            Gets the type that couldn't be resolved.
+            Gets the type that that was requested and couldn't be resolved.
             </summary>
         </member>
     </members>

@@ -14,32 +14,32 @@ namespace FuseBox
         /// <summary>
         /// Initializes a new instance of the <see cref="UnresolvableTypeException"/> class.
         /// </summary>
-        /// <param name="type">The type that couldn't be resolved.</param>
-        public UnresolvableTypeException(Type type)
-            : this(type, "Couldn't resolve type.", null)
+        /// <param name="requested">The type that couldn't be resolved.</param>
+        public UnresolvableTypeException(Type requested)
+            : this(requested, "Couldn't resolve type.", null)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UnresolvableTypeException"/> class.
         /// </summary>
-        /// <param name="type">The type that couldn't be resolved.</param>
+        /// <param name="requested">The type that couldn't be resolved.</param>
         /// <param name="reason">The reason why the type couldn't be resolved.</param>
-        public UnresolvableTypeException(Type type, string reason)
-            : this(type, reason, null)
+        public UnresolvableTypeException(Type requested, string reason)
+            : this(requested, reason, null)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UnresolvableTypeException"/> class.
         /// </summary>
-        /// <param name="type">The type that couldn't be resolved.</param>
+        /// <param name="requested">The type that couldn't be resolved.</param>
         /// <param name="reason">The reason why the type couldn't be resolved.</param>
         /// <param name="innerException">The exception that caused this exception.</param>
-        public UnresolvableTypeException(Type type, string reason, Exception innerException)
+        public UnresolvableTypeException(Type requested, string reason, Exception innerException)
             : base(reason, innerException)
         {
-            Type = type;
+            Requested = requested;
         }
 
         /// <summary>
@@ -62,11 +62,13 @@ namespace FuseBox
         protected UnresolvableTypeException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            // TODO: Review, test
+            Requested = info.GetValue<Type>(nameof(Requested));
         }
 
         /// <summary>
-        /// Gets the type that couldn't be resolved.
+        /// Gets the type that that was requested and couldn't be resolved.
         /// </summary>
-        public Type Type { get; }
+        public Type Requested { get; }
     }
 }

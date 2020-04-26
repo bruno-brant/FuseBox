@@ -9,43 +9,162 @@ using System.Reflection;
 namespace FuseBox
 {
     /// <summary>
-    /// Fuse is a very simple IoC container that should be used to wire-up applications
-    /// in a loosely coupled way.
+    /// Fuse is a very simple IoC container that should be used to wire-up
+    /// applicationsin a loosely coupled way.
     /// </summary>
     public class Container // TODO: Rename it FuseBox once I settle on a package name. :)
     {
-        /// <summary>
-        /// Message when there isn't a suitable constructor.
-        /// </summary>
-        private const string NoSuitableConstructor = "No suitable constructor found. Inspect inner exception for details.";
-
         /// <summary>
         /// Tells if a certain type is currently being resolved.
         /// </summary>
         private readonly Dictionary<Type, bool> _isResolving = new Dictionary<Type, bool>(); // TODO: This isn't thread-safe
 
         /// <summary>
+        /// Maps abstract types to concrete implementations.
+        /// </summary>
+        private readonly Dictionary<Type, Type> _mappings = new Dictionary<Type, Type>();
+
+        /// <summary>
+        /// Registers a mapping between two types.
+        /// </summary>
+        /// <param name="requested">The type that is requested of the container.</param>
+        /// <param name="resolves">The type that the container should resolve.</param>
+        public void Register(Type requested, Type resolves)
+        {
+            if (requested is null)
+            {
+                throw new ArgumentNullException(nameof(requested));
+            }
+
+            if (resolves is null)
+            {
+                throw new ArgumentNullException(nameof(resolves));
+            }
+
+            if (!requested.IsAssignableFrom(resolves))
+            {
+                throw new ImproperMappingException(requested, resolves);
+            }
+
+            if (_mappings.ContainsKey(requested))
+            {
+                throw new DuplicatedMappingException(requested, resolves, _mappings[requested]);
+            }
+
+            if (resolves.IsInterface || resolves.IsAbstract)
+            {
+                throw new UninstantiableTypeException(requested, resolves);
+            }
+
+            _mappings[requested] = resolves;
+        }
+
+        /// <summary>
+        /// Tries to registers a mapping between two types.
+        /// </summary>
+        /// <param name="requested">The type that is requested of the container.</param>
+        /// <param name="resolves">The type that the container should resolve.</param>
+        /// <returns>
+        /// True if there were no previous mappings registered and therefore this
+        /// registration succeeded. False otherwise.
+        /// </returns>
+        public bool TryRegister(Type requested, Type resolves)
+        {
+            if (IsRegistered(requested))
+            {
+                return false;
+            }
+
+            Register(requested, resolves);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Removes mappings.
+        /// </summary>
+        /// <param name="requested">The type for which all mappings will be removed.</param>
+        /// <exception cref="TypeNotRegisteredException">
+        /// When the requested type has no mappings.
+        /// </exception>
+        public void Unregister(Type requested)
+        {
+            if (!_mappings.ContainsKey(requested))
+            {
+                throw new TypeNotRegisteredException(requested);
+            }
+
+            _mappings.Remove(requested);
+        }
+
+        /// <summary>
+        /// Informs whether a given type has mappings registered within the container.
+        /// </summary>
+        /// <param name="type">
+        ///     The type to check for mappings.
+        /// </param>
+        /// <returns>
+        ///     True if the type has mappings, false otherwise.
+        /// </returns>
+        public bool IsRegistered(Type type)
+        {
+            return _mappings.ContainsKey(type);
+        }
+
+        /// <summary>
         /// Resolves an instance for the given type.
         /// </summary>
-        /// <param name="type">The type to be resolved.</param>
-        /// <returns>A instance that is assignable to <paramref name="type"/>.</returns>
-        public object Resolve(Type type)
+        /// <param name="request">The type to be resolved.</param>
+        /// <returns>
+        ///     A instance that is assignable to <paramref name="request"/>.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///     When <paramref name="request"/> is null.
+        /// </exception>
+        /// <exception cref="CyclicDependencyException">
+        ///     When <paramref name="request"/> constructors have cyclic dependencies,
+        ///     that is, the object graph they form has at least on cycle.
+        /// </exception>
+        /// <exception cref="UnresolvableTypeException">
+        ///     When <paramref name="request"/> can't be resolved to a instatiable
+        ///     constructor.
+        /// </exception>
+        /// <exception cref="UnmappedTypeException">
+        ///     When <paramref name="request"/> isn't instantiable and there are
+        ///     no mappings available.
+        /// </exception>
+        public object Resolve(Type request)
         {
-            if (type is null)
+            if (request is null)
             {
-                throw new ArgumentNullException(nameof(type));
+                throw new ArgumentNullException(nameof(request));
             }
 
-            if (_isResolving.ContainsKey(type) && _isResolving[type] == true)
+            if (_mappings.ContainsKey(request))
             {
-                throw new CyclicDependencyException(type);
+                return Resolve(_mappings[request]);
             }
 
-            _isResolving[type] = true;
+            if (request.IsAbstract || request.IsInterface)
+            {
+                throw new UnmappedTypeException(request);
+            }
 
-            var constructors = type.GetConstructors();
+            if (_isResolving.ContainsKey(request) && _isResolving[request] == true)
+            {
+                throw new CyclicDependencyException(request);
+            }
 
-            Exception lastException = null;
+            return ResolveImpl(request);
+        }
+
+        private object ResolveImpl(Type request)
+        {
+            _isResolving[request] = true;
+
+            var constructors = request.GetConstructors();
+
+            var reasons = new Dictionary<string, Exception>();
 
             foreach (var constructor in constructors.OrderByDescending(_ => _.GetParameters().Length))
             {
@@ -53,32 +172,27 @@ namespace FuseBox
                 {
                     var instance = Resolve(constructor);
 
-                    _isResolving[type] = false;
+                    _isResolving[request] = false;
 
                     return instance;
                 }
-                catch (UnresolvableTypeException e)
+                catch (Exception e)
                 {
-                    // TODO: Ignoring this exception works, has poor performance
-                    lastException = e;
-                }
-                catch (CyclicDependencyException e)
-                {
-                    // TODO: Ignoring this exception works, has poor performance
-                    lastException = e;
+                    // TODO: Ignoring this exception works, but has poor performance
+                    reasons.Add(constructor.ToString(), e);
                 }
             }
 
-            _isResolving[type] = false;
+            _isResolving[request] = false;
 
-            // specific cause, why that constructor isn't suitable
             if (constructors.Length == 1)
             {
-                throw lastException;
+                throw reasons.Single().Value;
             }
-
-            // Generic - there are multiple constructors, and none of them are suitable
-            throw new UnresolvableTypeException(type, NoSuitableConstructor, lastException);
+            else
+            {
+                throw new NoSuitableConstructorException(request, reasons);
+            }
         }
 
         private object Resolve(ConstructorInfo constructor)

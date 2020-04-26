@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-namespace FuseBox.Tests
+namespace FuseBox.Tests.ContainerTests
 {
     public class Iteration1Tests
     {
@@ -27,7 +27,7 @@ namespace FuseBox.Tests
         [Fact]
         public void Resolve_TypeHasPrivateConstructorOnly_Throws()
         {
-            Assert.Throws<UnresolvableTypeException>(() => _sut.Resolve(typeof(OnlyPrivateConstructor)));
+            Assert.Throws<NoSuitableConstructorException>(() => _sut.Resolve(typeof(OnlyPrivateConstructor)));
         }
 
         [Fact]
